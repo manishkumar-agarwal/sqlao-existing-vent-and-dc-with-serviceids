@@ -82,6 +82,13 @@
       },
       "defaultValue": "contoso.com"
     },
+    "domainjoinouPath": {
+      "type": "string",
+      "metadata": {
+        "description": "OU path for where machines must be domain joined"
+      },
+      "defaultValue": "CN=Computers,DC=wtw_test,DC=local"
+    },
     "adminUsername": {
       "type": "string",
       "metadata": {
@@ -175,6 +182,7 @@
     "deploySqlCluster": "deploySqlCluster",
     "sqlAlwaysOnValues": {
       "domainName": "[parameters('existingDomainName')]",
+      "domainjoinouPath": "[parameters('domainjoinouPath')]",
       "dnsServerName": "[parameters('existingAdPDCVMName')]",
       "sqlAvailabilitySetName": "[parameters('sqlAvailabilitySetName')]",
       "nicSubnetUri": "[variables('sqlSubnetRef')]",

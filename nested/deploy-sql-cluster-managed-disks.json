@@ -312,7 +312,7 @@
         "settings": {
           "Name": "[parameters('sqlAlwaysOnValues').domainName]",
           "Options": "3",
-          //       "OUPath": "[variables('domainjoinouPath')]",
+          "OUPath": "[parameters('sqlAlwaysOnValues').domainjoinouPath]",
           "Restart": "true",
           "User": "[parameters('adminUsername')]"
         },
