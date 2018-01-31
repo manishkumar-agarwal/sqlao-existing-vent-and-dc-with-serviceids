@@ -42,7 +42,7 @@
     "deploySqlAlwaysOnTemplateUrl": "[concat(parameters('_artifactsLocation'),'/nested/deploy-sql-alwayson.json',parameters('_artifactsLocationSasToken'))]",
     "sqlAOListener1": "[concat(variables('sqlLBName'),'-EndPointListener')]"
   },
-	"resources": [
+  "resources": [
     {
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[parameters('sqlAlwaysOnValues').sqlAvailabilitySetName]",
@@ -290,59 +290,118 @@
         }
       }
     },
-		{
-			"name": "[variables('deploySqlWitnessShare')]",
-			"type": "Microsoft.Resources/deployments",
-			"apiVersion": "2015-01-01",
-			"dependsOn": [
-				"[resourceId('Microsoft.Compute/virtualMachines',variables('sqlWitnessVMName'))]"
-			],
-			"properties": {
-				"mode": "Incremental",
-				"templateLink": {
-					"uri": "[variables('deploySqlWitnessShareTemplateUrl')]",
-					"contentVersion": "1.0.0.0"
-				},
-				"parameters": {
-					"sqlWitnessVMName": {
-						"value": "[variables('sqlWitnessVMName')]"
-					},
+    {
+      "apiVersion": "2016-04-30-preview",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('sqlAlwaysOnValues').vmNames[copyIndex()],'/joindomain')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines',parameters('sqlAlwaysOnValues').sqlServerVMNames[0])]",
+        "[resourceId('Microsoft.Compute/virtualMachines',parameters('sqlAlwaysOnValues').sqlServerVMNames[1])]",
+        "[resourceId('Microsoft.Compute/virtualMachines',variables('sqlWitnessVMName'))]"
+      ],
+      "copy": {
+        "name": "domainJoinLoop",
+        "count": "[length(parameters('sqlAlwaysOnValues').vmNames)]"
+      },
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('sqlAlwaysOnValues').domainName]",
+          "Options": "3",
+          //       "OUPath": "[variables('domainjoinouPath')]",
+          "Restart": "true",
+          "User": "[parameters('adminUsername')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('adminPassword')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('sqlAlwaysOnValues').vmNames[copyIndex()],'/scriptconfig')]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "configAdminsLoop",
+        "count": "[length(parameters('sqlAlwaysOnValues').vmNames)]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('sqlAlwaysOnValues').sqlServerVMNames[0],'/extensions','/joindomain')]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('sqlAlwaysOnValues').sqlServerVMNames[1],'/extensions','/joindomain')]",
+        "[concat('Microsoft.Compute/virtualMachines/', variables('sqlWitnessVMName'),'/extensions','/joindomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+
+          ],
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted net localgroup administrators ',parameters('adminUsername'),' ',parameters('sqlAlwaysOnValues').sqlServerServiceAccountUserName,' /add')]"
+        }
+      }
+    },
+    {
+      "name": "[variables('deploySqlWitnessShare')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines',variables('sqlWitnessVMName'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', variables('sqlWitnessVMName'),'/extensions','/scriptconfig')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('deploySqlWitnessShareTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "sqlWitnessVMName": {
+            "value": "[variables('sqlWitnessVMName')]"
+          },
           "domainName": {
             "value": "[parameters('sqlAlwaysOnValues').domainName]"
           },
           "sharePath": {
             "value": "[parameters('sqlAlwaysOnValues').sqlWitnessSharePath]"
           },
-					"adminUsername": {
-						"value": "[parameters('adminUsername')]"
-					},
-					"adminPassword": {
-						"value": "[parameters('adminPassword')]"
-					},
-					"_artifactsLocation": {
-						"value": "[parameters('_artifactsLocation')]"
-					},
-					"_artifactsLocationSasToken": {
-						"value": "[parameters('_artifactsLocationSasToken')]"
-					}
-				}
-			}
-		},
-		{
-			"name": "[variables('deploySqlAlwaysOn')]",
-			"type": "Microsoft.Resources/deployments",
-			"apiVersion": "2015-01-01",
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "_artifactsLocation": {
+            "value": "[parameters('_artifactsLocation')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "[variables('deploySqlAlwaysOn')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines',parameters('sqlAlwaysOnValues').sqlServerVMNames[0])]",
-        "[resourceId('Microsoft.Compute/virtualMachines',parameters('sqlAlwaysOnValues').sqlServerVMNames[1])]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('sqlAlwaysOnValues').sqlServerVMNames[0],'/extensions','/scriptconfig')]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('sqlAlwaysOnValues').sqlServerVMNames[1],'/extensions','/scriptconfig')]",
         "[variables('deploySqlWitnessShareId')]"
       ],
-			"properties": {
-				"mode": "Incremental",
-				"templateLink": {
-					"uri": "[variables('deploySqlAlwaysOnTemplateUrl')]",
-					"contentVersion": "1.0.0.0"
-				},
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('deploySqlAlwaysOnTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
         "parameters": {
           "sqlAlwaysOnValues": {
             "value": "[parameters('sqlAlwaysOnValues')]"
@@ -360,8 +419,8 @@
             "value": "[parameters('_artifactsLocationSasToken')]"
           }
         }
-			}
-		}
-	],
+      }
+    }
+  ],
 	"outputs": {}
 }
