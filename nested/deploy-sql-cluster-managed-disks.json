@@ -314,7 +314,7 @@
           "Options": "3",
           "OUPath": "[parameters('sqlAlwaysOnValues').domainjoinouPath]",
           "Restart": "true",
-          "User": "[parameters('adminUsername')]"
+          "User": "[concat(parameters('sqlAlwaysOnValues').domainName,'\\',parameters('adminUsername'))]"
         },
         "protectedsettings": {
           "Password": "[parameters('adminPassword')]"
