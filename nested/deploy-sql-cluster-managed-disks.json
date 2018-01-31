@@ -314,7 +314,7 @@
           "Options": "3",
           "OUPath": "[parameters('sqlAlwaysOnValues').domainjoinouPath]",
           "Restart": "true",
-          "User": "[concat(parameters('sqlAlwaysOnValues').domainName,'\\',parameters('adminUsername'))]"
+          "User": "[concat('wtw_test','\\',parameters('adminUsername'))]"
         },
         "protectedsettings": {
           "Password": "[parameters('adminPassword')]"
