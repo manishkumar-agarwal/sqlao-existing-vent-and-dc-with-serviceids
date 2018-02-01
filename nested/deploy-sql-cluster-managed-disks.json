@@ -344,7 +344,7 @@
           "fileUris": [
 
           ],
-          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted net localgroup administrators ',parameters('adminUsername'),' ',parameters('sqlAlwaysOnValues').sqlServerServiceAccountUserName,' /add')]"
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted net localgroup administrators ','wtw_test','\\',parameters('adminUsername'),' ',parameters('sqlAlwaysOnValues').sqlServerServiceAccountUserName,' /add')]"
         }
       }
     },
