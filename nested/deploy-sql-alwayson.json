@@ -103,13 +103,18 @@
             "sqlServiceCreds": {
               "userName": "[parameters('sqlAlwaysOnValues').sqlServerServiceAccountUserName]",
               "password": "PrivateSettingsRef:sqlServerServiceAccountPassword"
+            },
+            "localAdmincreds": {
+              "userName": "[parameters('sqlAlwaysOnValues').localAdminUsername]",
+              "password": "PrivateSettingsRef:localAdminPassword"
             }
           }
         },
         "protectedSettings": {
           "items": {
             "adminPassword": "[parameters('adminPassword')]",
-            "sqlServerServiceAccountPassword": "[parameters('sqlAlwaysOnValues').sqlServerServiceAccountPassword]"
+            "sqlServerServiceAccountPassword": "[parameters('sqlAlwaysOnValues').sqlServerServiceAccountPassword]",
+            "localAdminPassword": "[parameters('sqlAlwaysOnValues').localAdminPassword]"
           }
         }
       }
